@@ -1,0 +1,14 @@
+@startuml C4_Level1_SystemContext
+!include <C4/C4_Context>
+
+title Instakill – Level 1: System Context
+
+Person(user, "User", "Posts, likes and comments.")
+Person(admin, "Admin", "Operates the system via REST API and health endpoints.")
+System(instakill, "Instakill", "Instagram-style social feed.")
+System_Ext(images, "External Image Host", "Serves post images via URL.")
+
+Rel(user, instakill, "Uses", "Browser")
+Rel(admin, instakill, "Manages", "REST API")
+Rel(user, images, "Loads images", "HTTPS")
+@enduml

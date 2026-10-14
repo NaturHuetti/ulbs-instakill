@@ -1,0 +1,56 @@
+@startuml C4_Level3_Component_Backend
+!include <C4/C4_Component>
+
+LAYOUT_TOP_DOWN()
+
+title Instakill – Level 3: Backend Components
+
+Container(spa, "Vue SPA", "Vue 3, Axios", "Frontend")
+Person(user, "User", "Browser (Thymeleaf web UI)")
+
+Container_Boundary(backend, "Backend Monolith (Spring Boot)") {
+
+    Boundary(web, "Web Layer") {
+        Component(security, "Security Filter Chain", "Spring Security", "JwtAuthenticationFilter, RequestIdFilter. Stateless /api/**, CSRF for web UI.")
+        Component(controllers, "Controllers", "@RestController, @Controller", "REST: Auth, User, Post (/api/**)\nMVC: Auth, Feed, Post (Thymeleaf)\n+ RestExceptionHandler")
+    }
+
+    Boundary(app, "Application Layer (Modules)") {
+        Component(userMod, "User Module", "AuthService, UserService", "Register, login (BCrypt), user lookup")
+        Component(postMod, "Post Module", "PostService", "Create, read, delete own posts")
+        Component(interMod, "Interaction Module", "InteractionService", "Comments, like toggle, counters, LikeCreatedEvent")
+        Component(feedMod, "Feed Module", "FeedService + Strategies", "Newest / Trending ranking")
+    }
+
+    Boundary(infra, "Infrastructure Layer") {
+        Component(jwt, "JwtTokenService", "jjwt", "Creates / validates JWTs")
+        Component(repos, "Repository Adapters", "Spring Data JPA", "User, Post, Like, Comment adapters implementing domain repositories")
+    }
+}
+
+ContainerDb(db, "Database", "SQLite", "users, posts, likes, comments")
+
+Rel(spa, security, "JSON", "/api/**")
+Rel(user, security, "HTML", "/feed, /posts, /auth")
+
+Rel(security, controllers, "Routes")
+Rel_R(security, jwt, "Validates token")
+
+Rel(controllers, userMod, "Uses")
+Rel(controllers, postMod, "Uses")
+Rel(controllers, interMod, "Uses")
+
+Rel_R(postMod, feedMod, "Delegates feed")
+Rel(userMod, jwt, "Issues token")
+
+Rel(userMod, repos, "Uses")
+Rel(postMod, repos, "Uses")
+Rel(interMod, repos, "Uses")
+Rel(feedMod, repos, "Uses")
+
+Rel(repos, db, "Reads / writes", "JPA / JDBC")
+
+Lay_R(userMod, postMod)
+Lay_R(postMod, feedMod)
+Lay_R(feedMod, interMod)
+@enduml

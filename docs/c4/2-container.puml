@@ -1,0 +1,24 @@
+@startuml C4_Level2_Container
+!include <C4/C4_Container>
+
+title Instakill – Level 2: Container
+
+Person(user, "User", "Uses Instakill in the browser.")
+Person(admin, "Admin", "Operates the system via REST API and health endpoints.")
+System_Ext(imageHost, "External Image Host", "Serves post images via URL.")
+
+System_Boundary(instakill, "Instakill") {
+    Container(spa, "Vue SPA", "Vue 3, Vite, Axios", "Single-page app for feed, login and posts. Dev server :5173, proxies /api and /auth to the backend.")
+    Container(backend, "Backend Monolith", "Java 23, Spring Boot 3.3, Spring Security, Thymeleaf", "Provides the REST API (/api/**), server-rendered web UI (/feed, /posts, /auth), Swagger UI and Actuator. Auth via JWT in the HttpOnly cookie ACCESS_TOKEN.")
+    ContainerDb(db, "Database", "SQLite (instakill.db), Hibernate/JPA", "Stores users, posts, likes and comments.")
+}
+
+Rel(user, spa, "Uses", "HTTPS")
+Rel(user, backend, "Uses web UI (Thymeleaf)", "HTML/HTTPS, forms")
+Rel(admin, backend, "Manages", "REST API, Actuator")
+Rel(spa, backend, "Calls REST API", "JSON/HTTPS, Axios, cookie JWT")
+Rel(backend, db, "Reads / writes", "JDBC (sqlite-jdbc)")
+Rel(user, imageHost, "Loads images", "HTTPS")
+
+SHOW_LEGEND()
+@enduml
