@@ -31,6 +31,10 @@ instakill:
     secret: change-me-change-me-change-me-change-me-change-me-secret-key-1234
     issuer: instakill
     ttl-minutes: 120
+  ntfy:
+    enabled: true
+    base-url: https://ntfy.sh
+    topic: ${NTFY_TOPIC:instakill-demo}
 logging:
   level:
     org.hibernate.SQL: warn
