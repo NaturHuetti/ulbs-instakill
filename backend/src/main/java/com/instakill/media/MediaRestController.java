@@ -25,9 +25,14 @@ public class MediaRestController {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "mp4", "mov");
 
-    private final Path mediaDir;
+    private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp");
 
-    public MediaRestController(@Value("${media.base-path:media}") String basePath) {
+    private final Path mediaDir;
+    private final ImageProcessingService imageProcessing;
+
+    public MediaRestController(@Value("${media.base-path:media}") String basePath,
+                               ImageProcessingService imageProcessing) {
+        this.imageProcessing = imageProcessing;
         this.mediaDir = Path.of(basePath).toAbsolutePath().normalize();
     }
 
@@ -44,7 +49,11 @@ public class MediaRestController {
         String filename = UUID.randomUUID() + "." + extension;
         try {
             Files.createDirectories(mediaDir);
-            file.transferTo(mediaDir.resolve(filename));
+            if (IMAGE_EXTENSIONS.contains(extension)) {
+                Files.write(mediaDir.resolve(filename), imageProcessing.process(file.getBytes(), extension));
+            } else {
+                file.transferTo(mediaDir.resolve(filename));
+            }
         } catch (IOException e) {
             throw new UncheckedIOException("Could not store file", e);
         }

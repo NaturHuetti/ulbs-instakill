@@ -17,3 +17,7 @@ instakill:
     secret: test-secret-change-me-change-me-change-me-change-me-1234567890
     issuer: instakill-test
     ttl-minutes: 60
+  ntfy:
+    enabled: false
+    base-url: http://localhost
+    topic: test
