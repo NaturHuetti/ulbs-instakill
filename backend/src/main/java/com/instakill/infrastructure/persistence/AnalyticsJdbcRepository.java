@@ -18,13 +18,15 @@ public class AnalyticsJdbcRepository implements AnalyticsRepository {
     private static final String VIDEO_PREDICATE =
             "(lower(p.image_url) LIKE '%.mp4' OR lower(p.image_url) LIKE '%.mov')";
 
-    /** Per-post like and comment counts, computed from the actual rows (not the denormalized counters). */
+    /**
+     * Per-post like and comment counts from the denormalized counters on {@code posts}. This keeps every
+     * statistic a single indexed scan of {@code posts} instead of aggregating the whole likes/comments tables
+     * on each request.
+     */
     private static final String POST_ENGAGEMENT = """
             SELECT p.id, p.author_id, p.content, p.image_url, p.created_at,
-                   COALESCE(l.c, 0) AS likes, COALESCE(c.c, 0) AS comments
+                   p.like_count AS likes, p.comment_count AS comments
             FROM posts p
-            LEFT JOIN (SELECT post_id, COUNT(*) AS c FROM likes GROUP BY post_id) l ON l.post_id = p.id
-            LEFT JOIN (SELECT post_id, COUNT(*) AS c FROM comments GROUP BY post_id) c ON c.post_id = p.id
             """;
 
     private final JdbcTemplate jdbc;
