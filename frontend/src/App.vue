@@ -24,6 +24,14 @@
         </form>
       </section>
 
+      <section v-else-if="view === 'analytics'">
+        <div class="feed-toolbar">
+          <h2>Analytics</h2>
+          <div class="sort"><button @click="view = 'feed'">Back to feed</button></div>
+        </div>
+        <Analytics />
+      </section>
+
       <section v-else class="feed">
         <form @submit.prevent="createNewPost" class="card form composer">
           <textarea v-model="composer.content" rows="3" placeholder="Share something..." required></textarea>
@@ -38,6 +46,7 @@
         <div class="feed-toolbar">
           <h2>Feed</h2>
           <div class="sort">
+            <button @click="view = 'analytics'">Analytics</button>
             <button :class="{ active: sort === 'new' }" @click="changeSort('new')">Newest</button>
             <button :class="{ active: sort === 'trending' }" @click="changeSort('trending')">Trending</button>
           </div>
@@ -95,11 +104,13 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import Analytics from './Analytics.vue'
 import { createPost, fetchMe, listFeed, login, register as registerUser, toggleLike, listComments, addComment, uploadMedia } from './api'
 
 const user = ref(null)
 const posts = ref([])
 const sort = ref('new')
+const view = ref('feed')
 const authMode = ref('login')
 const error = ref('')
 const authForm = reactive({ username: '', email: '', password: '', usernameOrEmail: '' })
@@ -237,6 +248,7 @@ async function logout() {
   document.cookie = 'ACCESS_TOKEN=; Max-Age=0; path=/'
   user.value = null
   posts.value = []
+  view.value = 'feed'
 }
 </script>
 
