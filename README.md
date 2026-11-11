@@ -4,7 +4,7 @@ Instakill is a Spring Boot 3 / Vue 3 starter for an Instagram-style social feed.
 
 ## Project layout
 
-- `backend/` – Spring Boot application exposing REST and MVC endpoints, backed by SQLite.
+- `backend/` – Spring Boot application exposing REST and MVC endpoints, backed by PostgreSQL.
 - `frontend/` – Vue 3 SPA that consumes the REST API.
 - `scripts/` – helper tooling including Gradle bootstrap.
 

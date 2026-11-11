@@ -32,12 +32,13 @@ dependencies {
     implementation("org.hibernate.orm:hibernate-community-dialects:6.6.1.Final")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    runtimeOnly("org.xerial:sqlite-jdbc:3.46.1.3")
+    runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.assertj:assertj-core:3.26.3")
     testImplementation("org.mockito:mockito-core:5.14.2")
+    testRuntimeOnly("org.xerial:sqlite-jdbc:3.46.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

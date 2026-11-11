@@ -1,9 +1,10 @@
 spring:
   datasource:
-    url: jdbc:sqlite:./instakill.db
-    driver-class-name: org.sqlite.JDBC
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/instakill}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:instakill}
+    password: ${DB_PASSWORD:instakill_password}
   jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: update
     open-in-view: false

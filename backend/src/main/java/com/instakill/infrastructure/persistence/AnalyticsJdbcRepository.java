@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * All statistics are computed in SQL (SQLite). Timestamps are stored as epoch milliseconds,
+ * All statistics are computed in SQL (PostgreSQL). Timestamps are stored as timestamptz,
  * UUIDs as CHAR(36) strings.
  */
 @Repository
@@ -38,7 +38,7 @@ public class AnalyticsJdbcRepository implements AnalyticsRepository {
     @Override
     public List<WeeklyStats> weeklyStats(UUID userId) {
         // Week = Monday of the week in which the post/like/comment was created (UTC).
-        String week = "date(%s / 1000, 'unixepoch', 'weekday 0', '-6 days')";
+        String week = "to_char(date_trunc('week', %s AT TIME ZONE 'UTC'), 'YYYY-MM-DD')";
         String sql = """
                 SELECT week, SUM(posts) AS posts, SUM(likes) AS likes, SUM(comments) AS comments FROM (
                     SELECT %1$s AS week, 1 AS posts, 0 AS likes, 0 AS comments
@@ -49,7 +49,7 @@ public class AnalyticsJdbcRepository implements AnalyticsRepository {
                   UNION ALL
                     SELECT %3$s, 0, 0, 1
                     FROM comments x JOIN posts p ON p.id = x.post_id WHERE p.author_id = ?
-                )
+                ) w
                 GROUP BY week ORDER BY week
                 """.formatted(week.formatted("p.created_at"), week.formatted("x.created_at"),
                 week.formatted("x.created_at"));
@@ -62,7 +62,7 @@ public class AnalyticsJdbcRepository implements AnalyticsRepository {
 
     @Override
     public List<TopPost> topPostsByEngagement(UUID userId, int limit) {
-        String sql = "SELECT id, content, image_url, likes, comments FROM (" + POST_ENGAGEMENT + ") "
+        String sql = "SELECT id, content, image_url, likes, comments FROM (" + POST_ENGAGEMENT + ") t "
                 + "WHERE author_id = ? ORDER BY likes + comments DESC, created_at DESC LIMIT ?";
         return jdbc.query(sql,
                 (rs, i) -> new TopPost(UUID.fromString(rs.getString("id")), rs.getString("content"),
@@ -73,7 +73,7 @@ public class AnalyticsJdbcRepository implements AnalyticsRepository {
     @Override
     public Totals totals(UUID userId) {
         String sql = "SELECT COUNT(*) AS posts, COALESCE(SUM(likes), 0) AS likes, COALESCE(SUM(comments), 0) AS comments "
-                + "FROM (" + POST_ENGAGEMENT + ") WHERE author_id = ?";
+                + "FROM (" + POST_ENGAGEMENT + ") t WHERE author_id = ?";
         return jdbc.queryForObject(sql,
                 (rs, i) -> new Totals(rs.getLong("posts"), rs.getLong("likes"), rs.getLong("comments")),
                 userId.toString());
@@ -98,15 +98,15 @@ public class AnalyticsJdbcRepository implements AnalyticsRepository {
     public Optional<UserRank> engagementRank(UUID userId) {
         String sql = """
                 WITH per_user AS (
-                    SELECT author_id, AVG(likes + comments) AS avg_eng FROM (%s) GROUP BY author_id
+                    SELECT author_id, AVG(likes + comments) AS avg_eng FROM (%s) t GROUP BY author_id
                 )
                 SELECT me.avg_eng AS avg_eng,
                        (SELECT COUNT(*) FROM per_user) AS total_users,
-                       (SELECT COUNT(*) FROM per_user o WHERE o.avg_eng > me.avg_eng) + 1 AS rank
+                       (SELECT COUNT(*) FROM per_user o WHERE o.avg_eng > me.avg_eng) + 1 AS user_rank
                 FROM per_user me WHERE me.author_id = ?
                 """.formatted(POST_ENGAGEMENT);
         return jdbc.query(sql,
-                (rs, i) -> new UserRank(rs.getDouble("avg_eng"), rs.getLong("rank"), rs.getLong("total_users")),
+                (rs, i) -> new UserRank(rs.getDouble("avg_eng"), rs.getLong("user_rank"), rs.getLong("total_users")),
                 userId.toString()).stream().findFirst();
     }
 }
