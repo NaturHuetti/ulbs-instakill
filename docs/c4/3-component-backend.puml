@@ -28,7 +28,7 @@ Container_Boundary(backend, "Backend Monolith (Spring Boot)") {
     }
 }
 
-ContainerDb(db, "Database", "SQLite", "users, posts, likes, comments")
+ContainerDb(db, "Database", "PostgreSQL", "users, posts, likes, comments")
 
 Rel(spa, security, "JSON", "/api/**")
 Rel(user, security, "HTML", "/feed, /posts, /auth")
