@@ -20,6 +20,10 @@ export function createPost(payload) {
   return client.post('/api/posts', payload).then(res => res.data)
 }
 
+export function funnyfy(text) {
+  return client.post('/api/funnyfy', { text }).then(res => res.data)
+}
+
 export function uploadMedia(file) {
   const formData = new FormData()
   formData.append('file', file)

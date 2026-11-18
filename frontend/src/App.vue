@@ -35,6 +35,13 @@
       <section v-else class="feed">
         <form @submit.prevent="createNewPost" class="card form composer">
           <textarea v-model="composer.content" rows="3" placeholder="Share something..." required></textarea>
+          <div v-if="composer.content.trim() || funnyOriginal !== null" class="funnyfy-actions">
+            <button type="button" class="funnyfy-btn" :disabled="funnyLoading || !composer.content.trim()" @click="makeFunnier">
+              <span v-if="funnyLoading" class="spinner"></span>
+              {{ funnyLoading ? 'Thinking...' : 'Make It Funnier' }}
+            </button>
+            <button v-if="funnyOriginal !== null" type="button" class="link-button" @click="undoFunnier">Undo</button>
+          </div>
           <input v-model="composer.imageUrl" placeholder="Image/video URL (optional)">
           <input type="file" accept="image/*,video/mp4,video/quicktime" @change="onFileChosen">
           <p v-if="uploadError" class="error">{{ uploadError }}</p>
@@ -99,13 +106,14 @@
         </article>
       </section>
     </main>
+    <div v-if="toast.message" class="toast" :class="{ 'toast-error': toast.error }" role="status">{{ toast.message }}</div>
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import Analytics from './Analytics.vue'
-import { createPost, fetchMe, listFeed, login, register as registerUser, toggleLike, listComments, addComment, uploadMedia } from './api'
+import { createPost, fetchMe, listFeed, login, register as registerUser, toggleLike, listComments, addComment, uploadMedia, funnyfy } from './api'
 
 const user = ref(null)
 const posts = ref([])
@@ -116,6 +124,10 @@ const error = ref('')
 const authForm = reactive({ username: '', email: '', password: '', usernameOrEmail: '' })
 const composer = reactive({ content: '', imageUrl: '' })
 const uploading = ref(false)
+const funnyLoading = ref(false)
+const funnyOriginal = ref(null)
+const toast = reactive({ message: '', error: false })
+let toastTimer = null
 const uploadError = ref('')
 
 // Comments state
@@ -196,11 +208,41 @@ async function submitComment(postId) {
   }
 }
 
+function showToast(message, isError = false) {
+  toast.message = message
+  toast.error = isError
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.message = '' }, 4000)
+}
+
+async function makeFunnier() {
+  const text = composer.content.trim()
+  if (!text || funnyLoading.value) return
+  funnyLoading.value = true
+  try {
+    const result = await funnyfy(text)
+    funnyOriginal.value = composer.content
+    composer.content = result.text
+    showToast('Your post just got funnier 😄')
+  } catch (e) {
+    const detail = e.response?.data?.detail
+    showToast(detail || (e.response ? 'Could not make your post funnier right now.' : 'Network error. Please try again.'), true)
+  } finally {
+    funnyLoading.value = false
+  }
+}
+
+function undoFunnier() {
+  if (funnyOriginal.value !== null) composer.content = funnyOriginal.value
+  funnyOriginal.value = null
+}
+
 async function createNewPost() {
   if (!composer.content.trim()) return
   await createPost({ content: composer.content, imageUrl: composer.imageUrl || null })
   composer.content = ''
   composer.imageUrl = ''
+  funnyOriginal.value = null
   await loadFeed()
 }
 
@@ -412,5 +454,62 @@ async function logout() {
   border: none;
   padding: 0.4rem 1.1rem;
   border-radius: 999px;
+}
+
+.funnyfy-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.form .funnyfy-btn {
+  background: #7c3aed;
+}
+
+.funnyfy-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.4em;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #fff;
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  z-index: 1000;
+}
+
+.toast-error {
+  background: #ef4444;
 }
 </style>

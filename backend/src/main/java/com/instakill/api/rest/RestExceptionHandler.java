@@ -7,6 +7,8 @@ import com.instakill.common.error.InstakillException;
 import com.instakill.common.error.NotFoundException;
 import com.instakill.common.error.UnauthorizedException;
 import com.instakill.common.error.ValidationException;
+import com.instakill.infrastructure.llm.LlmException;
+import com.instakill.infrastructure.llm.LlmUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
@@ -57,6 +59,23 @@ public class RestExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
         problem.setTitle(status.getReasonPhrase());
         problem.setType(URI.create("https://instakill.dev/errors/" + status.value()));
+        return problem;
+    }
+
+    @ExceptionHandler(LlmUnavailableException.class)
+    public ProblemDetail handleLlmUnavailable(LlmUnavailableException ex) {
+        HttpStatus status = ex.isTimeout() ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.SERVICE_UNAVAILABLE;
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+        problem.setTitle(status.getReasonPhrase());
+        problem.setType(URI.create("https://instakill.dev/errors/" + status.value()));
+        return problem;
+    }
+
+    @ExceptionHandler(LlmException.class)
+    public ProblemDetail handleLlm(LlmException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
+        problem.setTitle("Bad Gateway");
+        problem.setType(URI.create("https://instakill.dev/errors/502"));
         return problem;
     }
 
